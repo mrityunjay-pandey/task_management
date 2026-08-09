@@ -1,0 +1,158 @@
+// Prisma schema for the Task Management System.
+// Run `npx prisma generate` after installing dependencies locally,
+// and `npx prisma migrate dev --name init` once DATABASE_URL is set.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Theme {
+  LIGHT
+  DARK
+}
+
+enum ColorMode {
+  AMBER
+  BLUE
+  PINK
+  ROSE
+  EMERALD
+  BLACK
+}
+
+enum TaskStatus {
+  TODO
+  DOING
+  COMPLETED
+  ON_HOLD
+}
+
+enum Priority {
+  NO_PRIORITY
+  URGENT
+  HIGH
+  MEDIUM
+  LOW
+}
+
+model User {
+  id        String    @id @default(cuid())
+  // Guests get an auto-generated display name (e.g. "Guest-4821").
+  // email/title/username are optional profile fields editable later,
+  // matching the Figma Profile screen.
+  guestName String
+  email     String?
+  title     String?
+  username  String?
+  theme     Theme     @default(LIGHT)
+  colorMode ColorMode @default(BLUE)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // Tasks this user is reporter (creator) of
+  reportedTasks Task[]      @relation("TaskReporter")
+  projectsLed   Project[]   @relation("ProjectLead")
+  taskMemberships TaskMember[]
+  comments      Comment[]
+
+  @@map("users")
+}
+
+model Project {
+  id        String    @id @default(cuid())
+  name      String
+  priority  Priority  @default(NO_PRIORITY)
+  dueDate   DateTime?
+  leadId    String
+  lead      User      @relation("ProjectLead", fields: [leadId], references: [id])
+  tasks     Task[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([leadId])
+  @@map("projects")
+}
+
+model Task {
+  id          String     @id @default(cuid())
+  title       String
+  description String?
+  status      TaskStatus @default(TODO)
+  priority    Priority   @default(NO_PRIORITY)
+  startDate   DateTime?
+  dueDate     DateTime?
+
+  reporterId  String
+  reporter    User       @relation("TaskReporter", fields: [reporterId], references: [id])
+
+  projectId   String?
+  project     Project?   @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  // Self-relation for subtasks: a subtask is just a Task with a parentTaskId.
+  parentTaskId String?
+  parentTask   Task?     @relation("Subtasks", fields: [parentTaskId], references: [id], onDelete: Cascade)
+  subtasks     Task[]    @relation("Subtasks")
+
+  labels      Label[]      @relation("TaskLabels")
+  members     TaskMember[]
+  comments    Comment[]
+  activities  Activity[]
+
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([reporterId])
+  @@index([projectId])
+  @@index([parentTaskId])
+  @@map("tasks")
+}
+
+// Join table: a task can have multiple assigned members.
+model TaskMember {
+  taskId String
+  userId String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, userId])
+  @@map("task_members")
+}
+
+model Label {
+  id    String @id @default(cuid())
+  name  String @unique
+  tasks Task[] @relation("TaskLabels")
+
+  @@map("labels")
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@index([taskId])
+  @@map("comments")
+}
+
+// Auto-generated log entries (e.g. "changed priority from No priority to Urgent").
+// Written by the service layer whenever a tracked field changes - not user-editable.
+model Activity {
+  id        String   @id @default(cuid())
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  message   String
+  createdAt DateTime @default(now())
+
+  @@index([taskId])
+  @@map("activities")
+}
