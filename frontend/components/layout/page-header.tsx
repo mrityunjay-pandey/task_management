@@ -1,7 +1,7 @@
 "use client";
 
 interface PageHeaderProps {
-  title: string;
+  title: React.ReactNode;
   onMenuClick: () => void;
   children?: React.ReactNode;
 }
@@ -18,7 +18,7 @@ export function PageHeader({ title, onMenuClick, children }: PageHeaderProps) {
       >
         <MenuIcon />
       </button>
-      <h1 className="text-base font-semibold text-foreground">{title}</h1>
+      <div className="text-base font-semibold text-foreground">{title}</div>
       <div className="ml-auto flex flex-wrap items-center gap-2">{children}</div>
     </div>
   );
