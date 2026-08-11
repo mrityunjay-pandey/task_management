@@ -20,7 +20,7 @@ export default function LoginPage() {
     setError(null);
     try {
       await loginAsGuest();
-      router.push("/dashboard");
+      router.push("/tasks");
     } catch (err) {
       setError(
         err instanceof ApiError

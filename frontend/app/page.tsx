@@ -13,7 +13,7 @@ export default function Home() {
 
   useEffect(() => {
     if (status === "authenticated") {
-      router.replace("/dashboard");
+      router.replace("/tasks");
     } else if (status === "guest") {
       router.replace("/login");
     }

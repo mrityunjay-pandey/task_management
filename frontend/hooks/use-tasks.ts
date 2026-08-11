@@ -41,6 +41,13 @@ export function useTasks(query: TaskQuery) {
   }, [query.status, query.priority, query.search, query.projectId]);
 
   useEffect(() => {
+    // This is React's own documented "fetching data" effect pattern
+    // (see react.dev/learn/synchronizing-with-effects#fetching-data) - re-run
+    // whenever a filter changes. The newer set-state-in-effect lint rule
+    // flags this because it can't statically verify the call graph, but
+    // rewriting this as a non-effect (e.g. via Suspense + `use()`) would add
+    // real complexity for no behavioral benefit in an app this size.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchTasks();
   }, [fetchTasks]);
 
