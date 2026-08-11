@@ -1,0 +1,176 @@
+"use client";
+
+import { useState } from "react";
+import { Modal } from "@/components/ui/modal";
+import { Input, Textarea } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { TASK_STATUSES, PRIORITIES, STATUS_LABELS, PRIORITY_LABELS } from "@/types/task";
+import type { Task, TaskStatus, CreateTaskInput } from "@/types/task";
+import { ApiError } from "@/lib/api";
+
+interface TaskFormProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (input: CreateTaskInput) => Promise<void>;
+  onDelete?: () => void; // only relevant in edit mode
+  initialTask?: Task; // present = edit mode, absent = create mode
+  defaultStatus?: TaskStatus; // pre-select a column's status when creating from that column
+}
+
+interface FormErrors {
+  title?: string;
+}
+
+export function TaskForm({
+  isOpen,
+  onClose,
+  onSubmit,
+  onDelete,
+  initialTask,
+  defaultStatus,
+}: TaskFormProps) {
+  const isEditMode = !!initialTask;
+
+  // Lazy initializers derive the starting value once, from props, at mount -
+  // no effect needed. The parent remounts this component (via a `key` that
+  // changes each time a different task/create-action opens it), so "mount"
+  // naturally happens exactly when we need fresh state.
+  const [title, setTitle] = useState(() => initialTask?.title ?? "");
+  const [description, setDescription] = useState(() => initialTask?.description ?? "");
+  const [status, setStatus] = useState<TaskStatus>(
+    () => initialTask?.status ?? defaultStatus ?? "TODO",
+  );
+  const [priority, setPriority] = useState<CreateTaskInput["priority"]>(
+    () => initialTask?.priority ?? "NO_PRIORITY",
+  );
+  const [dueDate, setDueDate] = useState(() =>
+    initialTask?.dueDate ? initialTask.dueDate.slice(0, 10) : "",
+  );
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  function validate(): boolean {
+    const nextErrors: FormErrors = {};
+    if (!title.trim()) {
+      nextErrors.title = "Title is required";
+    } else if (title.length > 200) {
+      nextErrors.title = "Title must be 200 characters or fewer";
+    }
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!validate() || isSubmitting) return; // guards against duplicate submits too
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+    try {
+      await onSubmit({
+        title: title.trim(),
+        description: description.trim() || undefined,
+        status,
+        priority,
+        dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
+      });
+      onClose();
+    } catch (err) {
+      setSubmitError(
+        err instanceof ApiError ? err.message : "Couldn't save the task. Please try again.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title={isEditMode ? "Edit Task" : "Add Task"}>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
+        <Input
+          label="Title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          error={errors.title}
+          placeholder="e.g. Write API documentation"
+          maxLength={200}
+          required
+          autoFocus
+        />
+
+        <Textarea
+          label="Description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Add more detail (optional)"
+          maxLength={2000}
+        />
+
+        <div className="grid grid-cols-2 gap-3">
+          <Select
+            label="Status"
+            value={status}
+            onChange={(e) => setStatus(e.target.value as TaskStatus)}
+          >
+            {TASK_STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {STATUS_LABELS[s]}
+              </option>
+            ))}
+          </Select>
+
+          <Select
+            label="Priority"
+            value={priority}
+            onChange={(e) =>
+              setPriority(e.target.value as CreateTaskInput["priority"])
+            }
+          >
+            {PRIORITIES.map((p) => (
+              <option key={p} value={p}>
+                {PRIORITY_LABELS[p]}
+              </option>
+            ))}
+          </Select>
+        </div>
+
+        <Input
+          label="Due Date"
+          type="date"
+          value={dueDate}
+          onChange={(e) => setDueDate(e.target.value)}
+        />
+
+        {submitError ? (
+          <p role="alert" className="text-sm text-destructive">
+            {submitError}
+          </p>
+        ) : null}
+
+        <div className="mt-1 flex items-center justify-between gap-2">
+          {isEditMode && onDelete ? (
+            <button
+              type="button"
+              onClick={onDelete}
+              className="text-sm text-destructive hover:underline"
+            >
+              Delete task
+            </button>
+          ) : (
+            <span />
+          )}
+          <div className="flex gap-2">
+            <Button type="button" variant="secondary" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit" isLoading={isSubmitting}>
+              {isEditMode ? "Save Changes" : "Create Task"}
+            </Button>
+          </div>
+        </div>
+      </form>
+    </Modal>
+  );
+}
