@@ -44,6 +44,8 @@ export interface Task {
   labels: Label[];
   members: TaskMember[];
   subtasks?: Task[];
+  comments?: Comment[];
+  activities?: Activity[];
   _count?: { comments: number; subtasks: number };
   createdAt: string;
   updatedAt: string;
