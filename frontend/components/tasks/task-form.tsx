@@ -6,47 +6,30 @@ import { Input, Textarea } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { TASK_STATUSES, PRIORITIES, STATUS_LABELS, PRIORITY_LABELS } from "@/types/task";
-import type { Task, TaskStatus, CreateTaskInput } from "@/types/task";
+import type { TaskStatus, CreateTaskInput } from "@/types/task";
 import { ApiError } from "@/lib/api";
 
+// Create-only: editing an existing task happens on its detail page
+// (/tasks/[id]) instead, matching the Figma interaction of a full page
+// swap rather than a modal. Keeping this component create-only avoids an
+// edit-mode code path that's no longer reachable from anywhere in the app.
 interface TaskFormProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (input: CreateTaskInput) => Promise<void>;
-  onDelete?: () => void; // only relevant in edit mode
-  initialTask?: Task; // present = edit mode, absent = create mode
-  defaultStatus?: TaskStatus; // pre-select a column's status when creating from that column
+  defaultStatus?: TaskStatus;
 }
 
 interface FormErrors {
   title?: string;
 }
 
-export function TaskForm({
-  isOpen,
-  onClose,
-  onSubmit,
-  onDelete,
-  initialTask,
-  defaultStatus,
-}: TaskFormProps) {
-  const isEditMode = !!initialTask;
-
-  // Lazy initializers derive the starting value once, from props, at mount -
-  // no effect needed. The parent remounts this component (via a `key` that
-  // changes each time a different task/create-action opens it), so "mount"
-  // naturally happens exactly when we need fresh state.
-  const [title, setTitle] = useState(() => initialTask?.title ?? "");
-  const [description, setDescription] = useState(() => initialTask?.description ?? "");
-  const [status, setStatus] = useState<TaskStatus>(
-    () => initialTask?.status ?? defaultStatus ?? "TODO",
-  );
-  const [priority, setPriority] = useState<CreateTaskInput["priority"]>(
-    () => initialTask?.priority ?? "NO_PRIORITY",
-  );
-  const [dueDate, setDueDate] = useState(() =>
-    initialTask?.dueDate ? initialTask.dueDate.slice(0, 10) : "",
-  );
+export function TaskForm({ isOpen, onClose, onSubmit, defaultStatus }: TaskFormProps) {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [status, setStatus] = useState<TaskStatus>(defaultStatus ?? "TODO");
+  const [priority, setPriority] = useState<CreateTaskInput["priority"]>("NO_PRIORITY");
+  const [dueDate, setDueDate] = useState("");
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -87,7 +70,7 @@ export function TaskForm({
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={isEditMode ? "Edit Task" : "Add Task"}>
+    <Modal isOpen={isOpen} onClose={onClose} title="Add Task">
       <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
         <Input
           label="Title"
@@ -124,9 +107,7 @@ export function TaskForm({
           <Select
             label="Priority"
             value={priority}
-            onChange={(e) =>
-              setPriority(e.target.value as CreateTaskInput["priority"])
-            }
+            onChange={(e) => setPriority(e.target.value as CreateTaskInput["priority"])}
           >
             {PRIORITIES.map((p) => (
               <option key={p} value={p}>
@@ -149,26 +130,13 @@ export function TaskForm({
           </p>
         ) : null}
 
-        <div className="mt-1 flex items-center justify-between gap-2">
-          {isEditMode && onDelete ? (
-            <button
-              type="button"
-              onClick={onDelete}
-              className="text-sm text-destructive hover:underline"
-            >
-              Delete task
-            </button>
-          ) : (
-            <span />
-          )}
-          <div className="flex gap-2">
-            <Button type="button" variant="secondary" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit" isLoading={isSubmitting}>
-              {isEditMode ? "Save Changes" : "Create Task"}
-            </Button>
-          </div>
+        <div className="mt-1 flex justify-end gap-2">
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" isLoading={isSubmitting}>
+            Create Task
+          </Button>
         </div>
       </form>
     </Modal>

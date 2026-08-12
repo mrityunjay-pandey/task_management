@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { useAppLayout } from "@/app/(app)/layout";
 import { useTasks } from "@/hooks/use-tasks";
@@ -17,27 +18,25 @@ import type { Task, TaskStatus, CreateTaskInput } from "@/types/task";
 type ViewMode = "board" | "list";
 
 export default function TasksPage() {
+  const router = useRouter();
   const { openSidebar } = useAppLayout();
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("board");
 
-  const { tasks, isLoading, error, refetch, createTask, updateTask, removeTask } =
-    useTasks({ search: search || undefined });
+  const { tasks, isLoading, error, refetch, createTask, removeTask } = useTasks({
+    search: search || undefined,
+  });
 
-  const [formState, setFormState] = useState<
-    { mode: "create"; status: TaskStatus } | { mode: "edit"; task: Task } | null
-  >(null);
+  // Create-only now - clicking an existing task navigates to its detail
+  // page instead, matching the Figma interaction (full page swap, not a modal).
+  const [createStatus, setCreateStatus] = useState<TaskStatus | null>(null);
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const hasAnyTasks = tasks.length > 0;
 
-  async function handleFormSubmit(input: CreateTaskInput) {
-    if (formState?.mode === "edit") {
-      await updateTask(formState.task.id, input);
-    } else {
-      await createTask(input);
-    }
+  async function handleCreateSubmit(input: CreateTaskInput) {
+    await createTask(input);
   }
 
   async function handleConfirmDelete() {
@@ -49,6 +48,10 @@ export default function TasksPage() {
     } finally {
       setIsDeleting(false);
     }
+  }
+
+  function goToTask(task: Task) {
+    router.push(`/tasks/${task.id}`);
   }
 
   return (
@@ -85,9 +88,7 @@ export default function TasksPage() {
           </button>
         </div>
 
-        <Button onClick={() => setFormState({ mode: "create", status: "TODO" })}>
-          + Add Task
-        </Button>
+        <Button onClick={() => setCreateStatus("TODO")}>+ Add Task</Button>
       </PageHeader>
 
       <div className="flex-1 overflow-auto p-4 md:p-6">
@@ -105,10 +106,7 @@ export default function TasksPage() {
             }
             action={
               !search ? (
-                <Button
-                  size="sm"
-                  onClick={() => setFormState({ mode: "create", status: "TODO" })}
-                >
+                <Button size="sm" onClick={() => setCreateStatus("TODO")}>
                   + Add Task
                 </Button>
               ) : undefined
@@ -117,40 +115,25 @@ export default function TasksPage() {
         ) : viewMode === "board" ? (
           <TaskBoard
             tasks={tasks}
-            onTaskClick={(task) => setFormState({ mode: "edit", task })}
-            onAddTask={(status) => setFormState({ mode: "create", status })}
+            onTaskClick={goToTask}
+            onAddTask={(status) => setCreateStatus(status)}
           />
         ) : (
           <TaskList
             tasks={tasks}
-            onTaskClick={(task) => setFormState({ mode: "edit", task })}
-            onAddTask={(status) => setFormState({ mode: "create", status })}
+            onTaskClick={goToTask}
+            onAddTask={(status) => setCreateStatus(status)}
             onDeleteTask={(task) => setTaskToDelete(task)}
           />
         )}
       </div>
 
       <TaskForm
-        key={
-          formState?.mode === "edit"
-            ? `edit-${formState.task.id}`
-            : formState?.mode === "create"
-              ? `create-${formState.status}`
-              : "closed"
-        }
-        isOpen={!!formState}
-        onClose={() => setFormState(null)}
-        onSubmit={handleFormSubmit}
-        onDelete={
-          formState?.mode === "edit"
-            ? () => {
-                setTaskToDelete(formState.task);
-                setFormState(null);
-              }
-            : undefined
-        }
-        initialTask={formState?.mode === "edit" ? formState.task : undefined}
-        defaultStatus={formState?.mode === "create" ? formState.status : undefined}
+        key={createStatus ?? "closed"}
+        isOpen={createStatus !== null}
+        onClose={() => setCreateStatus(null)}
+        onSubmit={handleCreateSubmit}
+        defaultStatus={createStatus ?? undefined}
       />
 
       <ConfirmDialog
