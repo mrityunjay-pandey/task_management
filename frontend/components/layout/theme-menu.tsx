@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useAuth } from "@/hooks/use-auth";
@@ -111,6 +112,14 @@ export function ThemeMenu() {
           ) : null}
 
           <div className="my-1 border-t border-border" />
+          <Link
+            href="/settings"
+            role="menuitem"
+            onClick={() => setIsOpen(false)}
+            className="flex w-full items-center rounded-md px-2 py-1.5 text-left text-sm text-foreground hover:bg-background"
+          >
+            Settings
+          </Link>
           <button
             role="menuitem"
             onClick={() => logout()}
