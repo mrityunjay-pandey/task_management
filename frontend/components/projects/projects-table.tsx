@@ -12,7 +12,7 @@ interface ProjectsTableProps {
 
 export function ProjectsTable({ projects, onEdit, onDelete }: ProjectsTableProps) {
   return (
-    <div className="overflow-hidden rounded-lg border border-border">
+    <div className="overflow-x-auto rounded-lg border border-border">
       <table className="w-full border-collapse text-sm">
         <thead>
           <tr className="bg-card text-left text-xs text-muted-foreground">
@@ -26,7 +26,7 @@ export function ProjectsTable({ projects, onEdit, onDelete }: ProjectsTableProps
         <tbody>
           {projects.map((project) => (
             <tr key={project.id} className="border-t border-border hover:bg-card/60">
-              <td className="px-4 py-2.5">
+              <td className="max-w-[240px] truncate px-4 py-2.5">
                 <Link
                   href={`/projects/${project.id}`}
                   className="text-card-foreground hover:underline"

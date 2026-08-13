@@ -91,7 +91,7 @@ export function TaskForm({ isOpen, onClose, onSubmit, defaultStatus }: TaskFormP
           maxLength={2000}
         />
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Select
             label="Status"
             value={status}

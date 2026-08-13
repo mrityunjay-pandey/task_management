@@ -43,7 +43,7 @@ export function TaskList({ tasks, onTaskClick, onAddTask, onDeleteTask }: TaskLi
             </button>
 
             {!isCollapsed ? (
-              <div className="overflow-hidden rounded-lg border border-border">
+              <div className="overflow-x-auto rounded-lg border border-border">
                 {groupTasks.length > 0 ? (
                   <table className="w-full border-collapse text-sm">
                     <thead>
@@ -61,7 +61,9 @@ export function TaskList({ tasks, onTaskClick, onAddTask, onDeleteTask }: TaskLi
                           className="cursor-pointer border-t border-border hover:bg-card/60"
                           onClick={() => onTaskClick(task)}
                         >
-                          <td className="px-4 py-2.5 text-card-foreground">{task.title}</td>
+                          <td className="max-w-[240px] truncate px-4 py-2.5 text-card-foreground">
+                            {task.title}
+                          </td>
                           <td className="hidden px-4 py-2.5 sm:table-cell">
                             <PriorityBadge priority={task.priority} />
                           </td>

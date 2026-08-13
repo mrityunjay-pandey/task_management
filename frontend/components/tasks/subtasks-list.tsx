@@ -38,7 +38,7 @@ export function SubtasksList({ subtasks, onAdd }: SubtasksListProps) {
       </h3>
 
       {subtasks.length > 0 ? (
-        <div className="overflow-hidden rounded-lg border border-border">
+        <div className="overflow-x-auto rounded-lg border border-border">
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="bg-background text-left text-xs text-muted-foreground">
@@ -50,7 +50,9 @@ export function SubtasksList({ subtasks, onAdd }: SubtasksListProps) {
             <tbody>
               {subtasks.map((subtask) => (
                 <tr key={subtask.id} className="border-t border-border">
-                  <td className="px-3 py-2 text-card-foreground">{subtask.title}</td>
+                  <td className="max-w-[200px] truncate px-3 py-2 text-card-foreground">
+                    {subtask.title}
+                  </td>
                   <td className="hidden px-3 py-2 sm:table-cell">
                     <PriorityBadge priority={subtask.priority} />
                   </td>
