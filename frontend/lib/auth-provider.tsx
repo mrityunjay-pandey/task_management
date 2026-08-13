@@ -3,6 +3,7 @@
 import { createContext, useEffect, useState, useCallback } from "react";
 import type { User } from "@/types/user";
 import { authService } from "@/services/auth.service";
+import type { UpdateProfileInput } from "@/services/auth.service";
 
 interface AuthContextValue {
   user: User | null;
@@ -12,6 +13,7 @@ interface AuthContextValue {
   status: "checking" | "authenticated" | "guest";
   loginAsGuest: () => Promise<void>;
   logout: () => Promise<void>;
+  updateProfile: (input: UpdateProfileInput) => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
@@ -48,8 +50,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setStatus("guest");
   }, []);
 
+  const updateProfile = useCallback(async (input: UpdateProfileInput) => {
+    const updated = await authService.updateProfile(input);
+    setUser(updated);
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, status, loginAsGuest, logout }}>
+    <AuthContext.Provider value={{ user, status, loginAsGuest, logout, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );
