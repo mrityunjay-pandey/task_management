@@ -2,13 +2,17 @@ import {
   Controller,
   Post,
   Get,
+  Patch,
   Res,
+  Body,
   UseGuards,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { AuthService } from './auth.service';
+import { UsersService } from '../users/users.service';
+import { UpdateProfileDto } from '../users/dto/update-profile.dto';
 import { AuthGuard } from '../common/guards/auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { User } from '@prisma/client';
@@ -17,7 +21,10 @@ const SESSION_COOKIE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly usersService: UsersService,
+  ) {}
 
   // "Continue as Guest" button on the login screen calls this.
   // We set the token as an httpOnly cookie rather than returning it in the
@@ -46,6 +53,18 @@ export class AuthController {
   @UseGuards(AuthGuard)
   me(@CurrentUser() user: User) {
     return { data: this.toPublicUser(user), error: null };
+  }
+
+  // Powers the Profile settings screen - PATCH lives under /auth rather
+  // than a separate /users controller because this is specifically "update
+  // MY OWN profile", which is conceptually part of the current session,
+  // not general user management (which this app doesn't have - guests
+  // can't look up or edit other users).
+  @Patch('me')
+  @UseGuards(AuthGuard)
+  async updateMe(@CurrentUser() user: User, @Body() dto: UpdateProfileDto) {
+    const updated = await this.usersService.updateProfile(user.id, dto);
+    return { data: this.toPublicUser(updated), error: null };
   }
 
   @Post('logout')

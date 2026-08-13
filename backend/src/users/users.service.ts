@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Injectable()
 export class UsersService {
@@ -18,5 +19,15 @@ export class UsersService {
 
   async findById(id: string) {
     return this.prisma.user.findUnique({ where: { id } });
+  }
+
+  // Powers the Profile settings screen (Figma "Blocks / Sidebar-02").
+  // Guests can set an email/title/username even though they never
+  // "registered" one - matches the design showing these as editable fields.
+  async updateProfile(id: string, dto: UpdateProfileDto) {
+    return this.prisma.user.update({
+      where: { id },
+      data: dto,
+    });
   }
 }
