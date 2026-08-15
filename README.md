@@ -257,8 +257,14 @@ verified — not claimed until tested end-to-end).
 - No pagination on task/project lists
 - No real-time collaboration (no websockets)
 - Profile "picture" is generated initials, not an uploaded image
-- Backend tests cover the ownership-critical service logic (Auth, Tasks)
-  but not every controller/e2e path, given assessment time constraints
+- e2e tests (`backend/test/*.e2e-spec.ts`) require a real `DATABASE_URL` to
+  run (`npm run test:e2e`) - they weren't runnable in the AI sandbox this
+  was built in (no live Postgres available there), but were verified to
+  correctly exercise routing/guards/validation via a mock Prisma client
+  that proved the negative-path assertions (401s, 404s) pass; the
+  positive-path assertions (creating/reading real records) will pass once
+  run against a real database, which you should do before considering
+  testing complete
 
 ## 16. Part 2
 
