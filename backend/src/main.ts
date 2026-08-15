@@ -7,6 +7,12 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // Render/Railway/Fly all terminate HTTPS at a reverse proxy and forward
+  // plain HTTP to the app - without this, Express can't correctly see the
+  // real client IP or protocol from the X-Forwarded-* headers the proxy
+  // sets. Harmless locally (no proxy in front of localhost).
+  app.set('trust proxy', 1);
+
   app.use(cookieParser());
 
   // credentials: true is required so the browser will send/receive the
