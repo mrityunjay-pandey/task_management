@@ -30,6 +30,11 @@ export function TaskForm({ isOpen, onClose, onSubmit, defaultStatus }: TaskFormP
   const [status, setStatus] = useState<TaskStatus>(defaultStatus ?? "TODO");
   const [priority, setPriority] = useState<CreateTaskInput["priority"]>("NO_PRIORITY");
   const [dueDate, setDueDate] = useState("");
+  // Comma-separated input, matching the Figma design's tag chips (e.g.
+  // "Deployment, Testing") - parsed into an array on submit. A single text
+  // field is simpler to build/explain than a full tag-picker UI while still
+  // producing the same labelNames the backend expects.
+  const [labelsInput, setLabelsInput] = useState("");
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -58,6 +63,7 @@ export function TaskForm({ isOpen, onClose, onSubmit, defaultStatus }: TaskFormP
         status,
         priority,
         dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
+        labelNames: parseLabels(labelsInput),
       });
       onClose();
     } catch (err) {
@@ -124,6 +130,13 @@ export function TaskForm({ isOpen, onClose, onSubmit, defaultStatus }: TaskFormP
           onChange={(e) => setDueDate(e.target.value)}
         />
 
+        <Input
+          label="Labels"
+          value={labelsInput}
+          onChange={(e) => setLabelsInput(e.target.value)}
+          placeholder="e.g. Deployment, Testing (comma-separated)"
+        />
+
         {submitError ? (
           <p role="alert" className="text-sm text-destructive">
             {submitError}
@@ -141,4 +154,15 @@ export function TaskForm({ isOpen, onClose, onSubmit, defaultStatus }: TaskFormP
       </form>
     </Modal>
   );
+}
+
+// "Deployment, Testing, " -> ["Deployment", "Testing"] - trims whitespace,
+// drops empty entries (e.g. from a trailing comma), and de-duplicates.
+function parseLabels(input: string): string[] | undefined {
+  const names = input
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const unique = Array.from(new Set(names));
+  return unique.length > 0 ? unique : undefined;
 }
