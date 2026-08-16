@@ -152,6 +152,7 @@ export default function ProjectDetailPage() {
             onTaskClick={goToTask}
             onAddTask={(status) => setCreateStatus(status)}
             onDeleteTask={(task) => setTaskToDelete(task)}
+            visibleFields={{ priority: true, dueDate: true }}
           />
         )}
       </div>

@@ -8,12 +8,15 @@ import { useTasks } from "@/hooks/use-tasks";
 import { TaskBoard } from "@/components/tasks/task-board";
 import { TaskList } from "@/components/tasks/task-list";
 import { TaskForm } from "@/components/tasks/task-form";
+import { FieldsMenu } from "@/components/tasks/fields-menu";
+import type { VisibleFields } from "@/components/tasks/fields-menu";
+import { FilterMenu } from "@/components/tasks/filter-menu";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/states/empty-state";
 import { LoadingState } from "@/components/states/loading-state";
 import { ErrorState } from "@/components/states/error-state";
-import type { Task, TaskStatus, CreateTaskInput } from "@/types/task";
+import type { Task, TaskStatus, Priority, CreateTaskInput } from "@/types/task";
 
 type ViewMode = "board" | "list";
 
@@ -22,9 +25,17 @@ export default function TasksPage() {
   const { openSidebar } = useAppLayout();
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("board");
+  const [statusFilter, setStatusFilter] = useState<TaskStatus | undefined>();
+  const [priorityFilter, setPriorityFilter] = useState<Priority | undefined>();
+  const [visibleFields, setVisibleFields] = useState<VisibleFields>({
+    priority: true,
+    dueDate: true,
+  });
 
   const { tasks, isLoading, error, refetch, createTask, removeTask } = useTasks({
     search: search || undefined,
+    status: statusFilter,
+    priority: priorityFilter,
   });
 
   // Create-only now - clicking an existing task navigates to its detail
@@ -69,6 +80,14 @@ export default function TasksPage() {
           />
         </div>
 
+        <FieldsMenu fields={visibleFields} onChange={setVisibleFields} />
+        <FilterMenu
+          status={statusFilter}
+          priority={priorityFilter}
+          onStatusChange={setStatusFilter}
+          onPriorityChange={setPriorityFilter}
+        />
+
         <div className="flex rounded-lg border border-border p-0.5" role="tablist">
           <button
             role="tab"
@@ -98,14 +117,14 @@ export default function TasksPage() {
           <ErrorState message={error} onRetry={refetch} />
         ) : !hasAnyTasks ? (
           <EmptyState
-            title={search ? "No tasks found" : "No tasks yet"}
+            title={search || statusFilter || priorityFilter ? "No tasks found" : "No tasks yet"}
             description={
-              search
-                ? "Try a different search term."
+              search || statusFilter || priorityFilter
+                ? "Try a different search term or filter."
                 : "Create your first task to get started."
             }
             action={
-              !search ? (
+              !search && !statusFilter && !priorityFilter ? (
                 <Button size="sm" onClick={() => setCreateStatus("TODO")}>
                   + Add Task
                 </Button>
@@ -124,6 +143,7 @@ export default function TasksPage() {
             onTaskClick={goToTask}
             onAddTask={(status) => setCreateStatus(status)}
             onDeleteTask={(task) => setTaskToDelete(task)}
+            visibleFields={visibleFields}
           />
         )}
       </div>

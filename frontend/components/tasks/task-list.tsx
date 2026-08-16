@@ -5,14 +5,23 @@ import type { Task, TaskStatus } from "@/types/task";
 import { TASK_STATUSES, STATUS_LABELS } from "@/types/task";
 import { PriorityBadge } from "./status-badge";
 
+import type { VisibleFields } from "./fields-menu";
+
 interface TaskListProps {
   tasks: Task[];
   onTaskClick: (task: Task) => void;
   onAddTask: (status: TaskStatus) => void;
   onDeleteTask: (task: Task) => void;
+  visibleFields: VisibleFields;
 }
 
-export function TaskList({ tasks, onTaskClick, onAddTask, onDeleteTask }: TaskListProps) {
+export function TaskList({
+  tasks,
+  onTaskClick,
+  onAddTask,
+  onDeleteTask,
+  visibleFields,
+}: TaskListProps) {
   const [collapsed, setCollapsed] = useState<Set<TaskStatus>>(new Set());
 
   function toggle(status: TaskStatus) {
@@ -49,8 +58,16 @@ export function TaskList({ tasks, onTaskClick, onAddTask, onDeleteTask }: TaskLi
                     <thead>
                       <tr className="bg-card text-left text-xs text-muted-foreground">
                         <th className="px-4 py-2 font-medium">Task</th>
-                        <th className="hidden px-4 py-2 font-medium sm:table-cell">Priority</th>
-                        <th className="hidden px-4 py-2 font-medium md:table-cell">Due Date</th>
+                        {visibleFields.priority ? (
+                          <th className="hidden px-4 py-2 font-medium sm:table-cell">
+                            Priority
+                          </th>
+                        ) : null}
+                        {visibleFields.dueDate ? (
+                          <th className="hidden px-4 py-2 font-medium md:table-cell">
+                            Due Date
+                          </th>
+                        ) : null}
                         <th className="w-10 px-4 py-2" />
                       </tr>
                     </thead>
@@ -64,18 +81,22 @@ export function TaskList({ tasks, onTaskClick, onAddTask, onDeleteTask }: TaskLi
                           <td className="max-w-[240px] truncate px-4 py-2.5 text-card-foreground">
                             {task.title}
                           </td>
-                          <td className="hidden px-4 py-2.5 sm:table-cell">
-                            <PriorityBadge priority={task.priority} />
-                          </td>
-                          <td className="hidden px-4 py-2.5 text-muted-foreground md:table-cell">
-                            {task.dueDate
-                              ? new Date(task.dueDate).toLocaleDateString("en-US", {
-                                  day: "2-digit",
-                                  month: "short",
-                                  year: "numeric",
-                                })
-                              : "—"}
-                          </td>
+                          {visibleFields.priority ? (
+                            <td className="hidden px-4 py-2.5 sm:table-cell">
+                              <PriorityBadge priority={task.priority} />
+                            </td>
+                          ) : null}
+                          {visibleFields.dueDate ? (
+                            <td className="hidden px-4 py-2.5 text-muted-foreground md:table-cell">
+                              {task.dueDate
+                                ? new Date(task.dueDate).toLocaleDateString("en-US", {
+                                    day: "2-digit",
+                                    month: "short",
+                                    year: "numeric",
+                                  })
+                                : "—"}
+                            </td>
+                          ) : null}
                           <td className="px-4 py-2.5 text-right">
                             <button
                               onClick={(e) => {
