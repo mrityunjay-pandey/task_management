@@ -1,4 +1,5 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+const rawApiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+const API_URL = rawApiUrl.replace(/\/+$/, "");
 
 // Matches the backend's global exception filter and controller response
 // shape: every response is either { data: T, error: null } or
@@ -24,7 +25,8 @@ export async function apiFetch<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  const res = await fetch(`${API_URL}${normalizedPath}`, {
     ...options,
     credentials: "include",
     headers: {
