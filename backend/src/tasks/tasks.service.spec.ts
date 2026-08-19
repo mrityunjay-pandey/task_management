@@ -23,7 +23,7 @@ describe('TasksService', () => {
     reporterId: ownerId,
     status: 'TODO',
     priority: 'NO_PRIORITY',
-  } as never;
+  } as any;
 
   beforeEach(async () => {
     prisma = {
@@ -88,7 +88,7 @@ describe('TasksService', () => {
       prisma.task.findFirst.mockResolvedValue({ ...mockTask, priority: 'LOW' });
       prisma.task.update.mockResolvedValue({ ...mockTask, priority: 'HIGH' });
 
-      await service.update(ownerId, 'task-1', { priority: 'HIGH' } as never);
+      await service.update(ownerId, 'task-1', { priority: 'HIGH' } as any);
 
       expect(prisma.activity.create).toHaveBeenCalledWith(
         expect.objectContaining({

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useLocalStorage } from "@/hooks/use-local-storage";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
@@ -22,19 +23,19 @@ import { ApiError } from "@/lib/api";
 type ViewMode = "board" | "list";
 
 export default function ProjectDetailPage() {
-  const { openSidebar } = useAppLayout();
+  const { toggleSidebar } = useAppLayout();
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const projectId = params.id;
 
   const [project, setProject] = useState<Project | null>(null);
   const [projectError, setProjectError] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>("list");
+  const [viewMode, setViewMode] = useLocalStorage<ViewMode>(`viewMode_project_${projectId}`, "list");
 
   // Reuse the exact same task data/mutation hook as the main Tasks page,
   // just scoped to this project via the projectId filter - same CRUD logic,
   // no duplicated fetching code.
-  const { tasks, isLoading, error, refetch, createTask, removeTask } = useTasks({
+  const { tasks, isLoading, error, refetch, createTask, updateStatus, removeTask } = useTasks({
     projectId,
   });
 
@@ -83,13 +84,22 @@ export default function ProjectDetailPage() {
   if (projectError) {
     return (
       <div className="flex h-full flex-col">
-        <PageHeader title="Project" onMenuClick={openSidebar} />
+        <PageHeader title="Project" onMenuClick={toggleSidebar} />
         <div className="flex-1 p-6">
           <ErrorState message={projectError} onRetry={() => router.push("/projects")} />
         </div>
       </div>
     );
   }
+
+  const projectVisibleFields = {
+    priority: true,
+    dueDate: true,
+    members: true,
+    status: true,
+    labels: true,
+    reporter: false,
+  };
 
   return (
     <div className="flex h-full flex-col">
@@ -103,7 +113,7 @@ export default function ProjectDetailPage() {
             <span className="font-semibold text-foreground">{project?.name ?? "…"}</span>
           </div>
         }
-        onMenuClick={openSidebar}
+        onMenuClick={toggleSidebar}
       >
         <div className="flex rounded-lg border border-border p-0.5" role="tablist">
           <button
@@ -145,6 +155,8 @@ export default function ProjectDetailPage() {
             tasks={tasks}
             onTaskClick={goToTask}
             onAddTask={(status) => setCreateStatus(status)}
+            onStatusChange={updateStatus}
+            visibleFields={projectVisibleFields}
           />
         ) : (
           <TaskList
@@ -152,7 +164,7 @@ export default function ProjectDetailPage() {
             onTaskClick={goToTask}
             onAddTask={(status) => setCreateStatus(status)}
             onDeleteTask={(task) => setTaskToDelete(task)}
-            visibleFields={{ priority: true, dueDate: true }}
+            visibleFields={projectVisibleFields}
           />
         )}
       </div>

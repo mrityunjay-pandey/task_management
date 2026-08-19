@@ -3,8 +3,7 @@
 import { useState } from "react";
 import type { Task, TaskStatus } from "@/types/task";
 import { TASK_STATUSES, STATUS_LABELS } from "@/types/task";
-import { PriorityBadge } from "./status-badge";
-
+import { PriorityBadge, StatusBadge } from "./status-badge";
 import type { VisibleFields } from "./fields-menu";
 
 interface TaskListProps {
@@ -33,6 +32,13 @@ export function TaskList({
     });
   }
 
+  const showPriority = visibleFields.priority;
+  const showDueDate = visibleFields.dueDate;
+  const showMembers = visibleFields.members;
+  const showStatus = visibleFields.status;
+  const showLabels = visibleFields.labels;
+  const showReporter = visibleFields.reporter;
+
   return (
     <div className="flex flex-col gap-4">
       {TASK_STATUSES.map((status) => {
@@ -58,17 +64,25 @@ export function TaskList({
                     <thead>
                       <tr className="bg-card text-left text-xs text-muted-foreground">
                         <th className="px-4 py-2 font-medium">Task</th>
-                        {visibleFields.priority ? (
-                          <th className="hidden px-4 py-2 font-medium sm:table-cell">
-                            Priority
-                          </th>
+                        {showStatus ? (
+                          <th className="hidden px-4 py-2 font-medium sm:table-cell">Status</th>
                         ) : null}
-                        {visibleFields.dueDate ? (
-                          <th className="hidden px-4 py-2 font-medium md:table-cell">
-                            Due Date
-                          </th>
+                        {showPriority ? (
+                          <th className="hidden px-4 py-2 font-medium sm:table-cell">Priority</th>
                         ) : null}
-                        <th className="w-10 px-4 py-2" />
+                        {showMembers ? (
+                          <th className="hidden px-4 py-2 font-medium md:table-cell">Members</th>
+                        ) : null}
+                        {showLabels ? (
+                          <th className="hidden px-4 py-2 font-medium md:table-cell">Labels</th>
+                        ) : null}
+                        {showReporter ? (
+                          <th className="hidden px-4 py-2 font-medium lg:table-cell">Reporter</th>
+                        ) : null}
+                        {showDueDate ? (
+                          <th className="hidden px-4 py-2 font-medium md:table-cell">Due Date</th>
+                        ) : null}
+                        <th className="w-12 px-4 py-2 font-medium text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -78,15 +92,64 @@ export function TaskList({
                           className="cursor-pointer border-t border-border hover:bg-card/60"
                           onClick={() => onTaskClick(task)}
                         >
-                          <td className="max-w-[240px] truncate px-4 py-2.5 text-card-foreground">
+                          <td className="max-w-[240px] truncate px-4 py-2.5 font-medium text-card-foreground">
                             {task.title}
                           </td>
-                          {visibleFields.priority ? (
+                          {showStatus ? (
+                            <td className="hidden px-4 py-2.5 sm:table-cell">
+                              <StatusBadge status={task.status} />
+                            </td>
+                          ) : null}
+                          {showPriority ? (
                             <td className="hidden px-4 py-2.5 sm:table-cell">
                               <PriorityBadge priority={task.priority} />
                             </td>
                           ) : null}
-                          {visibleFields.dueDate ? (
+                          {showMembers ? (
+                            <td className="hidden px-4 py-2.5 md:table-cell">
+                              {task.members && task.members.length > 0 ? (
+                                <div className="flex -space-x-1.5 overflow-hidden">
+                                  {task.members.map((m) => (
+                                    <span
+                                      key={m.userId}
+                                      title={m.user.guestName}
+                                      className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-accent text-[10px] font-semibold text-accent-foreground ring-2 ring-card"
+                                    >
+                                      {m.user.guestName?.[0]?.toUpperCase() ?? "U"}
+                                    </span>
+                                  ))}
+                                </div>
+                              ) : (
+                                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-dashed border-border text-[10px] text-muted-foreground">
+                                  —
+                                </span>
+                              )}
+                            </td>
+                          ) : null}
+                          {showLabels ? (
+                            <td className="hidden px-4 py-2.5 md:table-cell">
+                              {task.labels.length > 0 ? (
+                                <div className="flex flex-wrap gap-1">
+                                  {task.labels.map((l) => (
+                                    <span
+                                      key={l.id}
+                                      className="rounded bg-background px-1.5 py-0.5 text-[11px] text-muted-foreground"
+                                    >
+                                      {l.name}
+                                    </span>
+                                  ))}
+                                </div>
+                              ) : (
+                                "—"
+                              )}
+                            </td>
+                          ) : null}
+                          {showReporter ? (
+                            <td className="hidden px-4 py-2.5 text-xs text-muted-foreground lg:table-cell">
+                              Admin
+                            </td>
+                          ) : null}
+                          {showDueDate ? (
                             <td className="hidden px-4 py-2.5 text-muted-foreground md:table-cell">
                               {task.dueDate
                                 ? new Date(task.dueDate).toLocaleDateString("en-US", {
