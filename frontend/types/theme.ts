@@ -22,9 +22,9 @@ export function splitTheme(combined: string | undefined): {
   mode: ThemeMode;
   color: ColorMode;
 } {
-  const [mode, color] = (combined ?? "light-blue").split("-") as [
+  const [mode, color] = (combined ?? "light-black").split("-") as [
     ThemeMode,
     ColorMode,
   ];
-  return { mode: mode ?? "light", color: color ?? "blue" };
+  return { mode: mode ?? "light", color: color ?? "black" };
 }

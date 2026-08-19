@@ -5,10 +5,6 @@ import { tasksService } from "@/services/tasks.service";
 import type { Task, UpdateTaskInput, CreateTaskInput } from "@/types/task";
 import { ApiError } from "@/lib/api";
 
-// findOne on the backend already includes comments + activities + subtasks
-// in one response (see TasksService.findOne's include), so a single
-// GET /tasks/:id gives us everything this page needs - no separate
-// fetches for subtasks/comments on initial load.
 export function useTaskDetail(taskId: string) {
   const [task, setTask] = useState<Task | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -44,6 +40,16 @@ export function useTaskDetail(taskId: string) {
     await fetchTask();
   }
 
+  async function updateSubtask(subtaskId: string, input: UpdateTaskInput) {
+    await tasksService.update(subtaskId, input);
+    await fetchTask();
+  }
+
+  async function deleteSubtask(subtaskId: string) {
+    await tasksService.remove(subtaskId);
+    await fetchTask();
+  }
+
   async function addComment(content: string) {
     await tasksService.addComment(taskId, content);
     await fetchTask();
@@ -60,6 +66,8 @@ export function useTaskDetail(taskId: string) {
     refetch: fetchTask,
     updateTask,
     addSubtask,
+    updateSubtask,
+    deleteSubtask,
     addComment,
     removeTask,
   };

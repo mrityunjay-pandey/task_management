@@ -1,11 +1,18 @@
 "use client";
 
 import { useState, useEffect, createContext, useContext } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { Sidebar } from "@/components/layout/sidebar";
 
-const AppLayoutContext = createContext<{ openSidebar: () => void } | null>(null);
+interface AppLayoutContextType {
+  openSidebar: () => void;
+  toggleSidebar: () => void;
+  isSidebarOpen: boolean;
+  isDesktopCollapsed: boolean;
+}
+
+const AppLayoutContext = createContext<AppLayoutContextType | null>(null);
 
 export function useAppLayout() {
   const ctx = useContext(AppLayoutContext);
@@ -19,8 +26,12 @@ export function useAppLayout() {
 // than repeating the check on every page.
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { status } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(false);
+
+  const isSettings = pathname?.startsWith("/settings");
 
   useEffect(() => {
     if (status === "guest") {
@@ -40,15 +51,33 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
+  function toggleSidebar() {
+    // On small screens toggle the mobile drawer, on desktop toggle collapse
+    if (typeof window !== "undefined" && window.innerWidth < 768) {
+      setIsSidebarOpen((v) => !v);
+    } else {
+      setIsDesktopCollapsed((v) => !v);
+    }
+  }
+
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-      <div className="flex min-w-0 flex-1 flex-col">
-        {/* Each page renders its own PageHeader (title/actions differ per
-            page), but the mobile hamburger button needs to open THIS
-            layout's sidebar state. AppLayoutContext exposes just that one
-            function so pages don't need sidebar state passed as a prop. */}
-        <AppLayoutContext.Provider value={{ openSidebar: () => setIsSidebarOpen(true) }}>
+      {!isSettings ? (
+        <Sidebar
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
+          isDesktopCollapsed={isDesktopCollapsed}
+        />
+      ) : null}
+      <div className="flex min-w-0 flex-1 flex-col transition-all duration-200">
+        <AppLayoutContext.Provider
+          value={{
+            openSidebar: () => setIsSidebarOpen(true),
+            toggleSidebar,
+            isSidebarOpen,
+            isDesktopCollapsed,
+          }}
+        >
           {children}
         </AppLayoutContext.Provider>
       </div>

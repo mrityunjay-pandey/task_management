@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useLocalStorage } from "@/hooks/use-local-storage";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { useAppLayout } from "@/app/(app)/layout";
@@ -22,17 +23,23 @@ type ViewMode = "board" | "list";
 
 export default function TasksPage() {
   const router = useRouter();
-  const { openSidebar } = useAppLayout();
+  const { toggleSidebar } = useAppLayout();
   const [search, setSearch] = useState("");
-  const [viewMode, setViewMode] = useState<ViewMode>("board");
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [viewMode, setViewMode] = useLocalStorage<ViewMode>("viewMode_tasks", "board");
   const [statusFilter, setStatusFilter] = useState<TaskStatus | undefined>();
   const [priorityFilter, setPriorityFilter] = useState<Priority | undefined>();
-  const [visibleFields, setVisibleFields] = useState<VisibleFields>({
+  const [visibleFields, setVisibleFields] = useLocalStorage<VisibleFields>("visibleFields_tasks", {
     priority: true,
     dueDate: true,
+    members: true,
+    status: true,
+    labels: true,
+    reporter: false,
   });
 
-  const { tasks, isLoading, error, refetch, createTask, removeTask } = useTasks({
+  const { tasks, isLoading, error, refetch, createTask, updateStatus, removeTask } = useTasks({
     search: search || undefined,
     status: statusFilter,
     priority: priorityFilter,
@@ -45,6 +52,30 @@ export default function TasksPage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const hasAnyTasks = tasks.length > 0;
+
+  // Keyboard shortcut (⌘F / Ctrl+F) to expand & focus search
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        setIsSearchExpanded(true);
+        setTimeout(() => searchInputRef.current?.focus(), 50);
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  function handleSearchExpand() {
+    setIsSearchExpanded(true);
+    setTimeout(() => searchInputRef.current?.focus(), 50);
+  }
+
+  function handleSearchBlur() {
+    if (!search) {
+      setIsSearchExpanded(false);
+    }
+  }
 
   async function handleCreateSubmit(input: CreateTaskInput) {
     await createTask(input);
@@ -67,20 +98,54 @@ export default function TasksPage() {
 
   return (
     <div className="flex h-full flex-col">
-      <PageHeader title="Tasks" onMenuClick={openSidebar}>
-        <div className="relative">
-          <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search tasks"
+      <PageHeader title="Tasks" onMenuClick={toggleSidebar}>
+        {/* Expandable Search matching Figma */}
+        {isSearchExpanded ? (
+          <div className="relative flex items-center">
+            <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <input
+              ref={searchInputRef}
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onBlur={handleSearchBlur}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  if (!search) setIsSearchExpanded(false);
+                }
+              }}
+              placeholder="Search tasks..."
+              aria-label="Search tasks"
+              className="h-9 w-48 sm:w-64 rounded-lg border border-input-border bg-card pl-8 pr-12 text-sm text-card-foreground placeholder:text-muted-foreground transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
+            <span
+              className="pointer-events-none absolute right-2 rounded border border-border bg-background px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
+              aria-hidden="true"
+            >
+              ⌘F
+            </span>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={handleSearchExpand}
             aria-label="Search tasks"
-            className="h-9 rounded-lg border border-input-border bg-card pl-8 pr-3 text-sm text-card-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          />
-        </div>
+            title="Search tasks (⌘F)"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-foreground hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <SearchIcon />
+          </button>
+        )}
 
-        <FieldsMenu fields={visibleFields} onChange={setVisibleFields} />
+        {/* Fields Dropdown (includes List/Board switcher and column visibility) */}
+        <FieldsMenu
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          fields={visibleFields}
+          onChange={setVisibleFields}
+        />
+
+        {/* Nested Filter Dropdown */}
         <FilterMenu
           status={statusFilter}
           priority={priorityFilter}
@@ -88,25 +153,7 @@ export default function TasksPage() {
           onPriorityChange={setPriorityFilter}
         />
 
-        <div className="flex rounded-lg border border-border p-0.5" role="tablist">
-          <button
-            role="tab"
-            aria-selected={viewMode === "list"}
-            onClick={() => setViewMode("list")}
-            className={`rounded-md px-3 py-1 text-sm ${viewMode === "list" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}
-          >
-            List
-          </button>
-          <button
-            role="tab"
-            aria-selected={viewMode === "board"}
-            onClick={() => setViewMode("board")}
-            className={`rounded-md px-3 py-1 text-sm ${viewMode === "board" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}
-          >
-            Board
-          </button>
-        </div>
-
+        {/* Add Task Button */}
         <Button onClick={() => setCreateStatus("TODO")}>+ Add Task</Button>
       </PageHeader>
 
@@ -136,6 +183,8 @@ export default function TasksPage() {
             tasks={tasks}
             onTaskClick={goToTask}
             onAddTask={(status) => setCreateStatus(status)}
+            onStatusChange={updateStatus}
+            visibleFields={visibleFields}
           />
         ) : (
           <TaskList
@@ -170,7 +219,7 @@ export default function TasksPage() {
 
 function SearchIcon({ className = "" }: { className?: string }) {
   return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true" className={className}>
+    <svg width="15" height="15" viewBox="0 0 14 14" fill="none" aria-hidden="true" className={className}>
       <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.3" />
       <path d="M9.5 9.5L12.5 12.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
     </svg>

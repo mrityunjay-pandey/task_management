@@ -14,7 +14,7 @@ import { ErrorState } from "@/components/states/error-state";
 import type { Project, CreateProjectInput } from "@/types/project";
 
 export default function ProjectsPage() {
-  const { openSidebar } = useAppLayout();
+  const { toggleSidebar } = useAppLayout();
   const { projects, isLoading, error, refetch, createProject, updateProject, removeProject } =
     useProjects();
 
@@ -45,7 +45,7 @@ export default function ProjectsPage() {
 
   return (
     <div className="flex h-full flex-col">
-      <PageHeader title="Projects" onMenuClick={openSidebar}>
+      <PageHeader title="Projects" onMenuClick={toggleSidebar}>
         <Button onClick={() => setFormState({ mode: "create" })}>+ Add Project</Button>
       </PageHeader>
 

@@ -20,7 +20,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     <NextThemesProvider
       attribute="data-theme"
       themes={ALL_THEMES}
-      defaultTheme="light-blue"
+      defaultTheme="light-black"
       enableSystem={false}
       storageKey="task-management-theme"
     >

@@ -17,7 +17,23 @@ import { ApiError } from "@/lib/api";
 // pattern rather than optimistic updates - simpler to reason about and
 // explain, at the cost of a brief loading flicker on each action.
 export function useTasks(query: TaskQuery) {
-  const [tasks, setTasks] = useState<Task[]>([]);
+  // Create a unique key for the current query (e.g., project specific or global)
+  const storageKey = query.projectId ? `project_tasks_${query.projectId}` : "all_tasks";
+
+  const [tasks, setTasks] = useState<Task[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (e) {
+          return [];
+        }
+      }
+    }
+    return [];
+  });
+  
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,6 +43,9 @@ export function useTasks(query: TaskQuery) {
     try {
       const result = await tasksService.list(query);
       setTasks(result);
+      if (typeof window !== "undefined") {
+        localStorage.setItem(storageKey, JSON.stringify(result));
+      }
     } catch (err) {
       setError(
         err instanceof ApiError
@@ -38,7 +57,7 @@ export function useTasks(query: TaskQuery) {
     }
     // Re-run whenever any filter value changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query.status, query.priority, query.search, query.projectId]);
+  }, [query.status, query.priority, query.search, query.projectId, storageKey]);
 
   useEffect(() => {
     // This is React's own documented "fetching data" effect pattern

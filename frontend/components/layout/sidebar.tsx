@@ -14,11 +14,13 @@ const NAV_ITEMS = [
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
+  isDesktopCollapsed?: boolean;
 }
 
 // Fixed on desktop, an overlay drawer on mobile - isOpen/onClose only
-// matter below the md breakpoint (see the mobile classes below).
-export function Sidebar({ isOpen, onClose }: SidebarProps) {
+// matter below the md breakpoint. When isDesktopCollapsed is true, the
+// sidebar transitions out smoothly on desktop viewports.
+export function Sidebar({ isOpen, onClose, isDesktopCollapsed = false }: SidebarProps) {
   const pathname = usePathname();
   const { user } = useAuth();
   // Matches the Figma design's collapsible "Workspace" nav section
@@ -37,8 +39,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
       <aside
         className={`fixed z-40 flex h-full w-64 shrink-0 flex-col border-r border-border bg-card
-          transition-transform duration-200 md:static md:translate-x-0
-          ${isOpen ? "translate-x-0" : "-translate-x-full"}`}
+          transition-all duration-200 md:static
+          ${isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
+          ${isDesktopCollapsed ? "md:-ml-64 md:border-r-0 md:opacity-0 md:pointer-events-none" : "md:ml-0 md:opacity-100"}`}
       >
         {/* Workspace switcher - single-workspace app, so this is presentational
             (matches the Figma chevron affordance) rather than a real switcher.

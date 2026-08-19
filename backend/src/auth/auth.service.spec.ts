@@ -19,7 +19,7 @@ describe('AuthService', () => {
     colorMode: 'BLUE',
     createdAt: new Date(),
     updatedAt: new Date(),
-  } as never;
+  } as any;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({

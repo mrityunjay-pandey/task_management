@@ -16,10 +16,10 @@ describe('Tasks ownership (e2e)', () => {
     app = await createTestApp();
 
     const loginA = await request(app.getHttpServer()).post('/auth/guest');
-    userACookie = loginA.headers['set-cookie'];
+    userACookie = loginA.headers['set-cookie'] as unknown as string[];
 
     const loginB = await request(app.getHttpServer()).post('/auth/guest');
-    userBCookie = loginB.headers['set-cookie'];
+    userBCookie = loginB.headers['set-cookie'] as unknown as string[];
   });
 
   afterAll(async () => {
